@@ -1,0 +1,46 @@
+# Hermes Security Suite — Hook Policy
+# 实时拦截策略配置
+
+rules:
+  - name: "block-credential-leak"
+    description: "阻止API密钥/Token泄露"
+    trigger: "before_file_write"
+    pattern: "(sk-|AKIA|ghp_|glpat-)[a-zA-Z0-9]{20,}"
+    action: "block_and_alert"
+    severity: "critical"
+
+  - name: "block-prompt-injection"
+    description: "阻止提示注入攻击"
+    trigger: "before_llm_call"
+    patterns:
+      - "ignore previous instructions"
+      - "忽略之前的指令"
+      - "system prompt"
+    action: "block_and_log"
+    severity: "high"
+
+  - name: "block-memory-injection"
+    description: "阻止记忆注入"
+    trigger: "before_memory_write"
+    patterns:
+      - "MEMORY.md"
+      - "USER.md"
+      - "fact_store"
+    action: "require_approval"
+    severity: "high"
+
+  - name: "block-destructive-ops"
+    description: "阻止高危操作"
+    trigger: "before_terminal"
+    patterns:
+      - "rm -rf /"
+      - "DROP TABLE"
+      - "DELETE FROM"
+    action: "block_and_alert"
+    severity: "critical"
+
+  - name: "audit-outbound-requests"
+    description: "审计外发请求"
+    trigger: "before_http_request"
+    action: "log_and_continue"
+    severity: "info"

@@ -1,0 +1,16 @@
+#!/usr/bin/env sh
+# Hermes Doctor wrapper (L-4: avoid ${PYTHON} env var hijack; use PATH-resolved python3 with fallback chain)
+set -eu
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+
+# L-4: try python3, python in PATH order — never honor an attacker-supplied $PYTHON
+if command -v python3 >/dev/null 2>&1; then
+    PY_BIN=python3
+elif command -v python >/dev/null 2>&1; then
+    PY_BIN=python
+else
+    echo "ERROR: neither 'python3' nor 'python' found in PATH" >&2
+    exit 127
+fi
+
+exec "$PY_BIN" "$SCRIPT_DIR/hermes_doctor.py" "$@"
