@@ -1,6 +1,6 @@
-# 🛡️ Hermes Security Suite — Agent安全三件套
+# 🛡️ Hermes Security Suite — Agent安全四件套
 
-> **检测 · 诊断 · 防护** — AI Agent 全链路安全框架
+> **检测 · 诊断 · 防护 · 红队** — AI Agent 全链路安全框架
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Hermes Agent](https://img.shields.io/badge/Hermes-Agent-blue)](https://github.com/503496348-ops/hermes-agent)
@@ -11,26 +11,27 @@
 
 **对标**: NVIDIA SkillSpector (7.4K⭐) · Tencent AI-Infra-Guard (3.9K⭐) · agentic_security (1.9K⭐)
 
-**差异化**: 不是通用AI安全工具，而是 **Agent行为层** 的安全检测——专为自主Agent设计，覆盖从输入到输出的全链路。
+**差异化**: 不是通用AI安全工具，而是 **Agent行为层** 的安全检测——专为自主Agent设计，覆盖从输入到输出的全链路。集成原 AI-Infra-Guard 红队能力，提供 Agent 安全演习、MCP 审计、提示词越狱测试等攻击面评估。
 
 ```
-┌─────────────────────────────────────────────────┐
-│            Hermes Security Suite                 │
-│                                                  │
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐      │
-│  │ Detector │  │  Doctor  │  │  Hooks   │      │
-│  │ (检测)   │  │ (诊断)   │  │ (防护)   │      │
-│  │          │  │          │  │          │      │
-│  │ 825条规则│  │ 自诊断   │  │ Hook拦截 │      │
-│  │ 13层防护 │  │ 药方匹配 │  │ 实时阻断 │      │
-│  │ 自学习   │  │ 病历沉淀 │  │ 策略热更 │      │
-│  └──────────┘  └──────────┘  └──────────┘      │
-│                                                  │
-│  Input → [Detector] → [Doctor] → [Hooks] → Safe │
-└─────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────┐
+│                    Hermes Security Suite                           │
+│                                                                    │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────────┐      │
+│  │ Detector │  │  Doctor  │  │  Hooks   │  │   RedTeam    │      │
+│  │ (检测)   │  │ (诊断)   │  │ (防护)   │  │   (红队)     │      │
+│  │          │  │          │  │          │  │              │      │
+│  │ 825条规则│  │ 自诊断   │  │ Hook拦截 │  │ Agent演习    │      │
+│  │ 13层防护 │  │ 药方匹配 │  │ 实时阻断 │  │ MCP审计      │      │
+│  │ 自学习   │  │ 病历沉淀 │  │ 策略热更 │  │ 越狱测试     │      │
+│  └──────────┘  └──────────┘  └──────────┘  └──────────────┘      │
+│                                                                    │
+│  Input → [Detector] → [Doctor] → [Hooks] → Safe                   │
+│  Agent → [RedTeam: Agent-Scan + MCP-Scan + Agent-RT + PromptSec]  │
+└──────────────────────────────────────────────────────────────────┘
 ```
 
-## 📦 三大模块
+## 📦 四大模块
 
 ### 1. Detector — 安全检测引擎 (`detector/`)
 
@@ -89,6 +90,37 @@ rules:
     action: "block_and_alert"
 ```
 
+### 4. RedTeam — AI红队安全评估 (`redteam/`)
+
+整合原 AI-Infra-Guard 红队能力，提供全方位 AI 安全攻击面评估。包含四个子模块：
+
+| 子模块 | 能力 | 入口 |
+|--------|------|------|
+| **Agent-Scan** | AI Agent 驱动的代码扫描和漏洞检测 | `redteam/agent-scan/main.py` |
+| **MCP-Scan** | MCP Server 安全审计和动态分析 | `redteam/mcp-scan/main.py` |
+| **Agent RedTeam** | 一键式 Agent 安全演习 Skill | `redteam/agent-redteam/SKILL.md` |
+| **Prompt Security** | 提示词安全评估和越狱测试 | `redteam/prompt-security/cli_run.py` |
+
+**Agent RedTeam 核心能力**:
+- 🔍 **基础设施扫描**: 80+ AI服务指纹识别 + CVE匹配 (Ollama, vLLM, Dify 等)
+- 📝 **代码审计**: Skill源码分析、MCP Server审计、供应链检查
+- 🎯 **动态测试**: 30+ 提示注入载荷，自适应变异
+- 🔓 **越狱评估**: LLM边界测试，18+ 单轮攻击 + 6+ 多轮攻击算子
+- 🔗 **工作流攻击**: 多步任务链滥用、RAG间接注入
+
+```bash
+# 安装 Agent RedTeam Skill
+npx skills add https://github.com/503496348-ops/hermes-security-suite.git --skill agent-redteam
+
+# MCP Server 安全扫描
+cd redteam/mcp-scan && python main.py --repo /path/to/project
+
+# 提示词越狱测试
+cd redteam/prompt-security && python cli_run.py --model "gpt-3.5-turbo" \
+  --base_url "https://api.openai.com/v1" --api_key "key" \
+  --scenarios Bias --techniques PromptInjection
+```
+
 ## 🏃 Quick Start
 
 ```bash
@@ -99,8 +131,11 @@ cd hermes-security-suite
 # 运行测试
 python3 detector/test_genesisix.py
 
+# Agent 安全演习
+cd redteam/agent-redteam && python3 scripts/run.py
+
 # 在Hermes Agent中使用
-# 技能自动加载: genesisix-hermes, hermes-doctor, kingdom-shield-hooks
+# 技能自动加载: genesisix-hermes, hermes-doctor, kingdom-shield-hooks, aig-agent-redteam
 ```
 
 ## 📊 竞品对比
@@ -113,16 +148,17 @@ python3 detector/test_genesisix.py
 | **自学习** | ❌ | ❌ | ❌ | ✅ 误报/漏报自动优化 |
 | **自愈能力** | ❌ | ❌ | ❌ | ✅ Doctor诊断+修复 |
 | **实时防护** | ❌ | ❌ | ❌ | ✅ Hook拦截+阻断 |
+| **红队演习** | ❌ | 部分 | ❌ | ✅ Agent一键演习+MCP审计+越狱测试 |
 | **Hermes集成** | ❌ | ❌ | ❌ | ✅ 原生集成 |
 | **飞书通知** | ❌ | ❌ | ❌ | ✅ 安全事件飞书推送 |
-| **规则数** | ~200 | ~100 | ~50 | **825** |
-| **覆盖层数** | 3 | 5 | 3 | **13** |
+| **规则数** | ~200 | ~100 | ~50 | **825+** |
+| **覆盖层数** | 3 | 5 | 3 | **13+** |
 
 ## 📁 目录结构
 
 ```
 hermes-security-suite/
-├── detector/          # 安全检测引擎
+├── detector/              # 安全检测引擎
 │   ├── genesisix_detector.py  # 核心检测器
 │   ├── self_loop.py           # 自学习循环
 │   ├── rules/                 # 825条安全规则
@@ -133,11 +169,17 @@ hermes-security-suite/
 │   │   ├── deploy/           # 部署安全规则
 │   │   └── supply_chain/     # 供应链安全规则
 │   └── test_genesisix.py      # 测试套件
-├── doctor/            # 自诊断与自愈
+├── doctor/                # 自诊断与自愈
 │   └── doctor.py              # 诊断引擎
-├── hooks/             # 实时防护
+├── hooks/                 # 实时防护
 │   └── policy.yaml            # 拦截策略
-├── docs/              # 文档
+├── redteam/               # AI红队安全评估 (原 AI-Infra-Guard 能力)
+│   ├── agent-scan/        # Agent代码扫描
+│   ├── mcp-scan/          # MCP Server安全审计
+│   ├── agent-redteam/     # Agent安全演习Skill
+│   └── prompt-security/   # 提示词安全评估
+├── core/                  # 核心框架
+├── docs/                  # 文档
 │   └── COMPETITIVE_ANALYSIS.md
 └── README.md
 ```
@@ -146,8 +188,9 @@ hermes-security-suite/
 
 - [x] v1.0: 825条规则 + 13层检测
 - [x] v2.0: 自学习循环 + Hermes原生集成
-- [ ] v2.1: Doctor诊断 + 飞书告警
-- [ ] v2.2: Hook实时防护 + 策略热更
+- [x] v2.1: RedTeam模块 — Agent演习 + MCP审计 + 越狱测试 (整合AI-Infra-Guard能力)
+- [ ] v2.2: Doctor诊断 + 飞书告警
+- [ ] v2.3: Hook实时防护 + 策略热更
 - [ ] v3.0: Skill安全市场 + 社区规则贡献
 
 ## 📄 License
@@ -156,4 +199,6 @@ MIT — 自由使用，共同守护Agent安全。
 
 ---
 
-> **一句话**: SkillSpector检测Skill安全，AI-Infra-Guard保护基础设施，我们保护**Agent本身**——从输入到输出，从记忆到部署，13层825条规则，自学习，自诊断，自愈。
+> **一句话**: SkillSpector检测Skill安全，AI-Infra-Guard保护基础设施，我们保护**Agent本身**——从输入到输出，从记忆到部署，13层825条规则，自学习，自诊断，自愈，外加红队演习能力。
+
+> **AtomCollide-智械工坊** — 让AI安全可见、可测、可防
