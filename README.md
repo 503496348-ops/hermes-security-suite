@@ -9,7 +9,7 @@
 
 ## 🎯 定位
 
-**对标**: NVIDIA SkillSpector (7.4K⭐) · Tencent AI-Infra-Guard (3.9K⭐) · agentic_security (1.9K⭐)
+**对标**: NVIDIA SkillSpector (7.4K⭐) · Tencent AI-Infra-Guard (3.9K⭐) · agentic_security (1.9K⭐) · SkillSpector core parity (AST/Taint/YARA)
 
 **差异化**: 不是通用AI安全工具，而是 **Agent行为层** 的安全检测——专为自主Agent设计，覆盖从输入到输出的全链路。集成原 AI-Infra-Guard 红队能力，提供 Agent 安全演习、MCP 审计、提示词越狱测试等攻击面评估。
 
@@ -35,7 +35,7 @@
 
 ### 1. Detector — 安全检测引擎 (`detector/`)
 
-825条规则，13层防护：
+825+条规则，16层防护（含AST行为分析、数据流污点追踪、YARA签名扫描）：
 
 | 层 | 覆盖范围 | 规则数 |
 |---|---------|-------|
@@ -52,6 +52,9 @@
 | 数据层 | PII泄露、敏感信息外泄 | 80+ |
 | 自学习层 | 误报/漏报自动优化 | 持续增长 |
 | Hook层 | 实时拦截、策略执行 | 40+ |
+| AST行为分析层 | Python AST解析检测危险执行模式（exec/eval/subprocess链） | 8规则 |
+| 污点追踪层 | Source→Sink数据流分析（凭据泄露/RCE/数据外泄） | 5规则 |
+| YARA签名层 | 恶意软件/Webshell/挖矿/黑客工具签名扫描 | 20+规则 |
 
 ```python
 from detector.genesisix_detector import GenesisixDetector
@@ -64,6 +67,10 @@ result = detector.scan_llm("prompt内容")
 result = detector.scan_outbound("https://example.com")
 result = detector.scan_mcp(tool_schema, tool_output)
 result = detector.scan_multiturn(message_history)
+# 新增: AST行为分析 / 污点追踪 / YARA签名扫描
+result = detector.scan_code_ast(source_code, "plugin.py")
+result = detector.scan_code_taint(source_code, "plugin.py")
+result = detector.scan_yara(file_content, "script.sh")
 ```
 
 ### 2. Doctor — 自诊断与自愈 (`doctor/`)

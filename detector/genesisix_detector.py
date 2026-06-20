@@ -20,9 +20,21 @@ import re
 import json
 import os
 import time
+import sys
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass, asdict
+
+# ============================================================
+# Advanced Analysis Modules (AST / Taint / YARA)
+# ============================================================
+try:
+    from modules.ast_analyzer import scan_ast, ASTThreat
+    from modules.taint_tracker import scan_taint_flows, TaintThreat
+    from modules.yara_scanner import scan_yara, YARAThreat, is_yara_available
+    _ADVANCED_MODULES_AVAILABLE = True
+except ImportError:
+    _ADVANCED_MODULES_AVAILABLE = False
 
 # ============================================================
 # 常量与配置
@@ -846,7 +858,7 @@ class Detector:
         
         layers_to_scan = []
         if layer == "all":
-            layers_to_scan = ["llm", "web", "api", "deploy", "supply_chain", "resource_guard", "ingest", "outbound", "mcp_security", "memory", "integrity", "multi_agent"]
+            layers_to_scan = ["llm", "web", "api", "deploy", "supply_chain", "resource_guard", "ingest", "outbound", "mcp_security", "memory", "integrity", "multi_agent", "ast_analysis", "taint_tracking", "yara_signature"]
         else:
             layers_to_scan = [layer]
         
@@ -882,6 +894,42 @@ class Detector:
                     _, threats, conf = self.integrity.detect(detect_input)
                 elif ly == "multi_agent":
                     _, threats, conf = self.multi_agent.detect(detect_input)
+                elif ly == "ast_analysis" and _ADVANCED_MODULES_AVAILABLE:
+                    ast_results = scan_ast(detect_input, filename="<input>")
+                    threats = [Threat(
+                        layer="ast_analysis",
+                        rule_id=t.rule_id,
+                        description=t.message,
+                        severity=t.severity,
+                        confidence=t.confidence,
+                        matched=t.matched_text[:200],
+                        mitigation=t.mitigation,
+                    ) for t in ast_results]
+                    conf = max((t.confidence for t in ast_results), default=0.0)
+                elif ly == "taint_tracking" and _ADVANCED_MODULES_AVAILABLE:
+                    taint_results = scan_taint_flows(detect_input, filename="<input>")
+                    threats = [Threat(
+                        layer="taint_tracking",
+                        rule_id=t.rule_id,
+                        description=t.message,
+                        severity=t.severity,
+                        confidence=t.confidence,
+                        matched=t.matched_text[:200],
+                        mitigation=t.mitigation,
+                    ) for t in taint_results]
+                    conf = max((t.confidence for t in taint_results), default=0.0)
+                elif ly == "yara_signature" and _ADVANCED_MODULES_AVAILABLE:
+                    yara_results = scan_yara(detect_input, filename="<input>")
+                    threats = [Threat(
+                        layer="yara_signature",
+                        rule_id=t.rule_id,
+                        description=t.message,
+                        severity=t.severity,
+                        confidence=t.confidence,
+                        matched=t.matched_text[:200],
+                        mitigation=t.mitigation,
+                    ) for t in yara_results]
+                    conf = max((t.confidence for t in yara_results), default=0.0)
                 else:
                     continue
                 
@@ -1148,6 +1196,118 @@ class Detector:
             "scanned_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
         }
     
+    def scan_code_ast(self, source: str, filename: str = "<unknown>") -> dict:
+        """
+        Python AST行为分析 - 公开API
+        解析Python源码AST，检测危险执行模式（exec/eval/compile/subprocess链）
+
+        Args:
+            source: Python源码
+            filename: 文件名
+
+        Returns:
+            dict: { safe, threats, confidence, layer, layers_scanned }
+        """
+        if not self.config.get("enabled", True):
+            return {"safe": True, "threats": [], "confidence": 0}
+
+        if not _ADVANCED_MODULES_AVAILABLE:
+            return {"safe": True, "threats": [], "confidence": 0, "layers_scanned": [],
+                    "warning": "modules not available — install ast_analyzer"}
+
+        ast_results = scan_ast(source, filename=filename)
+        threats = [Threat(
+            layer="ast_analysis", rule_id=t.rule_id,
+            description=t.message, severity=t.severity,
+            confidence=t.confidence, matched=t.matched_text[:200],
+            mitigation=t.mitigation,
+        ) for t in ast_results]
+        confidence = max((t.confidence for t in ast_results), default=0.0)
+
+        return {
+            "safe": len(threats) == 0,
+            "threats": [asdict(t) for t in threats],
+            "confidence": confidence,
+            "layer": "ast_analysis",
+            "layers_scanned": ["ast_analysis"],
+            "scanned_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        }
+
+    def scan_code_taint(self, source: str, filename: str = "<unknown>") -> dict:
+        """
+        数据流污点追踪 - 公开API
+        追踪source→sink数据流（环境变量/文件读取→网络输出/exec）
+
+        Args:
+            source: Python源码
+            filename: 文件名
+
+        Returns:
+            dict: { safe, threats, confidence, layer, layers_scanned }
+        """
+        if not self.config.get("enabled", True):
+            return {"safe": True, "threats": [], "confidence": 0}
+
+        if not _ADVANCED_MODULES_AVAILABLE:
+            return {"safe": True, "threats": [], "confidence": 0, "layers_scanned": [],
+                    "warning": "modules not available — install taint_tracker"}
+
+        taint_results = scan_taint_flows(source, filename=filename)
+        threats = [Threat(
+            layer="taint_tracking", rule_id=t.rule_id,
+            description=t.message, severity=t.severity,
+            confidence=t.confidence, matched=t.matched_text[:200],
+            mitigation=t.mitigation,
+        ) for t in taint_results]
+        confidence = max((t.confidence for t in taint_results), default=0.0)
+
+        return {
+            "safe": len(threats) == 0,
+            "threats": [asdict(t) for t in threats],
+            "confidence": confidence,
+            "layer": "taint_tracking",
+            "layers_scanned": ["taint_tracking"],
+            "scanned_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        }
+
+    def scan_yara(self, content: str, filename: str = "<unknown>") -> dict:
+        """
+        YARA签名扫描 - 公开API
+        使用YARA规则检测恶意软件/webshell/挖矿程序/黑客工具
+
+        Args:
+            content: 文件内容
+            filename: 文件名
+
+        Returns:
+            dict: { safe, threats, confidence, layer, layers_scanned, yara_available }
+        """
+        if not self.config.get("enabled", True):
+            return {"safe": True, "threats": [], "confidence": 0}
+
+        if not _ADVANCED_MODULES_AVAILABLE or not is_yara_available():
+            return {"safe": True, "threats": [], "confidence": 0, "layers_scanned": [],
+                    "yara_available": False, "warning": "yara-python not installed"}
+
+        yara_results = scan_yara(content, filename=filename)
+        threats = [Threat(
+            layer="yara_signature", rule_id=t.rule_id,
+            description=t.message, severity=t.severity,
+            confidence=t.confidence, matched=t.matched_text[:200],
+            mitigation=t.mitigation,
+        ) for t in yara_results]
+        confidence = max((t.confidence for t in yara_results), default=0.0)
+
+        return {
+            "safe": len(threats) == 0,
+            "threats": [asdict(t) for t in threats],
+            "confidence": confidence,
+            "layer": "yara_signature",
+            "layers_scanned": ["yara_signature"],
+            "yara_available": True,
+            "scanned_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        }
+
     def scan_multiturn(self, messages: List[str], options: dict = None) -> dict:
         """
         多轮越狱扫描 - 公开API
