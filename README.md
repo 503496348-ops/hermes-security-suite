@@ -9,9 +9,9 @@
 
 ## 🎯 定位
 
-**对标**: NVIDIA SkillSpector (7.4K⭐) · Tencent AI-Infra-Guard (3.9K⭐) · agentic_security (1.9K⭐) · SkillSpector core parity (AST/Taint/YARA)
+定位: Agent行为层安全检测——专为自主Agent设计，覆盖从输入到输出的全链路。
 
-**差异化**: 不是通用AI安全工具，而是 **Agent行为层** 的安全检测——专为自主Agent设计，覆盖从输入到输出的全链路。集成原 AI-Infra-Guard 红队能力，提供 Agent 安全演习、MCP 审计、提示词越狱测试等攻击面评估。
+**差异化**: 不是通用AI安全工具，而是 **Agent行为层** 的安全检测——专为自主Agent设计，覆盖从输入到输出的全链路。集成红队能力，提供 Agent 安全演习、MCP 审计、提示词越狱测试等攻击面评估。
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
@@ -99,7 +99,7 @@ rules:
 
 ### 4. RedTeam — AI红队安全评估 (`redteam/`)
 
-整合原 AI-Infra-Guard 红队能力，提供全方位 AI 安全攻击面评估。包含四个子模块：
+整合红队能力，提供全方位 AI 安全攻击面评估。包含四个子模块：
 
 | 子模块 | 能力 | 入口 |
 |--------|------|------|
@@ -144,23 +144,6 @@ cd redteam/agent-redteam && python3 scripts/run.py
 # 在Hermes Agent中使用
 # 技能自动加载: genesisix-hermes, hermes-doctor, kingdom-shield-hooks, aig-agent-redteam
 ```
-
-## 📊 竞品对比
-
-| 维度 | SkillSpector (NVIDIA) | AI-Infra-Guard (Tencent) | agentic_security | **Hermes Security Suite** |
-|------|----------------------|-------------------------|-----------------|--------------------------|
-| **Stars** | 7.4K | 3.9K | 1.9K | 起步期 |
-| **定位** | Skill安全审计 | AI基础设施安全 | 通用Agent安全 | **Agent行为层全链路** |
-| **检测层** | 模型层 | 基础设施层 | 模型层 | **Agent层(输入→推理→输出→记忆→部署)** |
-| **自学习** | ❌ | ❌ | ❌ | ✅ 误报/漏报自动优化 |
-| **自愈能力** | ❌ | ❌ | ❌ | ✅ Doctor诊断+修复 |
-| **实时防护** | ❌ | ❌ | ❌ | ✅ Hook拦截+阻断 |
-| **红队演习** | ❌ | 部分 | ❌ | ✅ Agent一键演习+MCP审计+越狱测试 |
-| **Hermes集成** | ❌ | ❌ | ❌ | ✅ 原生集成 |
-| **飞书通知** | ❌ | ❌ | ❌ | ✅ 安全事件飞书推送 |
-| **规则数** | ~200 | ~100 | ~50 | **825+** |
-| **覆盖层数** | 3 | 5 | 3 | **13+** |
-
 ## 📁 目录结构
 
 ```
@@ -180,7 +163,7 @@ hermes-security-suite/
 │   └── doctor.py              # 诊断引擎
 ├── hooks/                 # 实时防护
 │   └── policy.yaml            # 拦截策略
-├── redteam/               # AI红队安全评估 (原 AI-Infra-Guard 能力)
+├── redteam/               # AI红队安全评估 (红队能力)
 │   ├── agent-scan/        # Agent代码扫描
 │   ├── mcp-scan/          # MCP Server安全审计
 │   ├── agent-redteam/     # Agent安全演习Skill
@@ -195,7 +178,7 @@ hermes-security-suite/
 
 - [x] v1.0: 825条规则 + 13层检测
 - [x] v2.0: 自学习循环 + Hermes原生集成
-- [x] v2.1: RedTeam模块 — Agent演习 + MCP审计 + 越狱测试 (整合AI-Infra-Guard能力)
+- [x] v2.1: RedTeam模块 — Agent演习 + MCP审计 + 越狱测试 (整合红队能力)
 - [ ] v2.2: Doctor诊断 + 飞书告警
 - [ ] v2.3: Hook实时防护 + 策略热更
 - [ ] v3.0: Skill安全市场 + 社区规则贡献
@@ -206,7 +189,7 @@ MIT — 自由使用，共同守护Agent安全。
 
 ---
 
-> **一句话**: SkillSpector检测Skill安全，AI-Infra-Guard保护基础设施，我们保护**Agent本身**——从输入到输出，从记忆到部署，13层825条规则，自学习，自诊断，自愈，外加红队演习能力。
+> **一句话**: 我们保护**Agent本身**——从输入到输出，从记忆到部署，13层825条规则，自学习，自诊断，自愈，外加红队演习能力。
 
 > **AtomCollide-智械工坊** — 让AI安全可见、可测、可防
 
