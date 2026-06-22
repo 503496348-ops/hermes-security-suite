@@ -209,3 +209,31 @@ MIT — 自由使用，共同守护Agent安全。
 > **一句话**: SkillSpector检测Skill安全，AI-Infra-Guard保护基础设施，我们保护**Agent本身**——从输入到输出，从记忆到部署，13层825条规则，自学习，自诊断，自愈，外加红队演习能力。
 
 > **AtomCollide-智械工坊** — 让AI安全可见、可测、可防
+
+---
+
+## 🚀 加入AtomCollide-AI智能体实验室
+
+**元素碰撞-AtomCollide-AI 智能体实验室** 是一个专注于AI领域的开源组织，汇聚了众多优秀学习者。
+
+### 核心价值
+
+**找工作：更省力，也更精准**
+- 一线大厂内推通道（字节、阿里、腾讯等）
+- 全链路求职赋能包（面试题库、简历优化、晋升指导）
+- 线下技术沙龙 & 人脉网络
+
+**学AI测试：真正落地，拒绝空谈**
+- 从0到1实战落地体系（Skills、MCP、RAG、AI IDE等）
+- 独家自研资料与工具矩阵
+- 前沿技术同步与提效方案
+
+### 加入社群
+
+- [知识库入口](https://vcnvmnln7wit.feishu.cn/wiki/WpK2wAcV8i6P8tke8X9cLcmDnSh)
+- [AI探索交流群](https://applink.feishu.cn/client/chat/chatter/add_by_link?link_token=074vd565-6084-455c-ac52-9703e89a0697)
+
+---
+
+*AtomCollide-智械工坊团队出品*
+
