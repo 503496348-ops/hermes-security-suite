@@ -34,7 +34,7 @@ triggers:
 - **三阶段自动化扫描**（NEW）
 - 安全演习和红队测试
 
-## Quick Start
+## 快速开始
 
 ```python
 from detector.genesisix_detector import GenesisixDetector
