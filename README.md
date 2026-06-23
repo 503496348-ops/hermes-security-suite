@@ -248,3 +248,36 @@ MIT — 自由使用，共同守护Agent安全。
 
 *AtomCollide-智械工坊团队出品*
 
+
+### 5. Agent Scan Pipeline — 三阶段扫描流水线 (`detector/modules/agent_scan_pipeline.py`)
+
+融合自 Tencent AI-Infra-Guard v4.1.14 的 Agent-Scan 框架架构。
+
+**三阶段流水线**:
+1. **信息收集** — 收集目标配置、能力和暴露的端点
+2. **并行漏洞检测** — 每个检测技能一个轻量级worker，并发执行
+3. **漏洞审查** — 合并结果，映射到OWASP ASI，分配最终严重程度
+
+**OWASP ASI 映射**:
+| 规则ID | OWASP ASI | 描述 |
+|--------|-----------|------|
+| AS1-AS3 | ASI-05 | Agent Snooping |
+| SC1-SC6 | ASI-06 | Supply Chain |
+| E1-E2 | ASI-02 | Data Leakage |
+| TM1-TM2 | ASI-04 | Tool Abuse |
+| MP1-MP2 | ASI-10 | Memory Poisoning |
+| AST1-AST2 | ASI-07 | Excessive Agency |
+| TT1-TT3 | ASI-02/ASI-07 | Taint Tracking |
+| YR1-YR2 | ASI-06 | YARA Signatures |
+| LP1-LP2 | ASI-04 | MCP Least Privilege |
+| TP1-TP2 | ASI-04 | MCP Tool Poisoning |
+
+```python
+from detector.modules.agent_scan_pipeline import AgentScanPipeline
+
+pipeline = AgentScanPipeline(max_workers=4)
+result = pipeline.scan("/path/to/skill")
+
+print(f"风险评分: {result.summary['risk_score']}/100")
+print(f"建议: {result.summary['recommendation']}")
+```
