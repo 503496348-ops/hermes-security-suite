@@ -8,6 +8,14 @@ metadata:
   hermes:
     tags: [security, ai-agent, prompt-injection, detection, diagnosis, hooks, redteam, agent-snooping, pipeline, owasp-asi]
     related_skills: [agent-security-hardening, kingdom-shield-hooks, group-chat-survival]
+triggers:
+  - 安全扫描
+  - 安全检测
+  - Agent安全
+  - prompt injection检测
+  - security scan
+  - 奇点造物
+  - hermes-security
 ---
 
 # Hermes Security Suite — Agent安全五件套
