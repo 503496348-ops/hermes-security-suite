@@ -54,6 +54,7 @@
 | Hook层 | 实时拦截、策略执行 | 40+ |
 | AST行为分析层 | Python AST解析检测危险执行模式（exec/eval/subprocess链） | 8规则 |
 | 污点追踪层 | Source→Sink数据流分析（凭据泄露/RCE/数据外泄） | 5规则 |
+| Agent Snooping层 | Agent配置窥探、MCP配置窃取、技能枚举 | 3规则（AS1-AS3） |
 | YARA签名层 | 恶意软件/Webshell/挖矿/黑客工具签名扫描 | 20+规则 |
 
 ```python
