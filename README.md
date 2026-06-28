@@ -251,7 +251,6 @@ MIT — 自由使用，共同守护Agent安全。
 
 ### 5. Agent Scan Pipeline — 三阶段扫描流水线 (`detector/modules/agent_scan_pipeline.py`)
 
-融合自 Tencent AI-Infra-Guard v4.1.14 的 Agent-Scan 框架架构。
 
 **三阶段流水线**:
 1. **信息收集** — 收集目标配置、能力和暴露的端点

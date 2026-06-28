@@ -88,7 +88,6 @@ Framework: OWASP LLMT09 (Misinformation), ASI-SR-003 (Least Knowledge)
 
 ## Agent Scan Pipeline (NEW)
 
-三阶段自动化扫描流水线，融合自 Tencent AI-Infra-Guard v4.1.14：
 
 1. **信息收集** — 收集目标配置、能力和暴露的端点
 2. **并行漏洞检测** — 每个检测技能一个轻量级worker，并发执行
