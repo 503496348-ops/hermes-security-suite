@@ -9,3 +9,4 @@ Extended security detection modules:
   - risk_scoring_engine: Unified 0-100 risk scoring with severity labels
   - sarif_reporter: SARIF v2.1.0 + Markdown report generation for CI/CD
 """
+from .content_hardening import harden_untrusted_content, sanitize_markup
