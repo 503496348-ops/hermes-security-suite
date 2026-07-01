@@ -323,3 +323,11 @@ print(f"建议: {result.summary['recommendation']}")
 
 AtomCollide-智械工坊团队出品。更多产品见：[AtomCollide Product Matrix](https://503496348-ops.github.io/atomcollide-product-matrix/)。
 
+## Governance Links
+
+- [LICENSE](LICENSE)
+- [CHANGELOG](CHANGELOG.md)
+- [SECURITY](SECURITY.md)
+- [CONTRIBUTING](CONTRIBUTING.md)
+
+
