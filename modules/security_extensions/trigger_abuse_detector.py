@@ -6,7 +6,7 @@ AtomCollide-智械工坊 · 2026
 Detects trigger abuse patterns in AI agent skills — hidden triggers that
 cause unintended behavior when specific conditions are met.
 
-Inspired by NVIDIA SkillSpector's Trigger Abuse category (3 patterns).
+Trigger abuse detection patterns for agent security workflows.
 
 Detection Patterns:
   TA1: Shadow Command Trigger — hidden commands activated by specific keywords

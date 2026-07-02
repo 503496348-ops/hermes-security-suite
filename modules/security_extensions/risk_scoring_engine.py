@@ -6,7 +6,7 @@ AtomCollide-智械工坊 · 2026
 Unified risk scoring engine that aggregates threats from all detection modules
 and produces a 0-100 risk score with severity labels and recommendations.
 
-Inspired by NVIDIA SkillSpector's risk scoring system.
+Product risk scoring system for agent security findings.
 
 Scoring Formula:
   CRITICAL: +50 points each

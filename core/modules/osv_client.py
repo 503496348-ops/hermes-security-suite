@@ -3,9 +3,9 @@
 奇点造物-Genesisix · OSV Client
 AtomCollide-智械工坊 · 2026
 
-融合自 NVIDIA SkillSpector (Apache 2.0) 的 OSV.dev 集成能力。
+面向 Agent 供应链审计的 OSV.dev 集成能力。
 
-提供实时CVE漏洞查询，支持离线降级。
+提供实时CVE漏洞查询、批量查询、版本感知检查和离线降级。
 
 Usage:
     from modules.osv_client import OSVClient
@@ -16,7 +16,7 @@ Usage:
 
 import json
 import subprocess
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional, Any, Tuple, Union
 from dataclasses import dataclass
 
 
@@ -71,30 +71,35 @@ class OSVClient:
         vuln_id = raw.get("id", "UNKNOWN")
         summary = raw.get("summary", raw.get("details", "")[:200])
 
-        # Determine severity from database_specific or severity field
-        severity = "MEDIUM"  # default
+        # Determine severity from database_specific or severity field.
+        severity = "MEDIUM"
         severity_list = raw.get("severity", [])
-        for s in severity_list:
-            score_str = s.get("score", "")
-            if "CRITICAL" in score_str.upper() or "CVSS:" in score_str:
-                # Parse CVSS score
-                try:
-                    parts = score_str.split("/")
-                    for part in parts:
-                        if part.startswith("CVSS:") or part.startswith("3."):
-                            continue
-                        if "S:" in part:
-                            sv = part.split(":")[1]
-                            if sv in ("C", "CRITICAL"):
-                                severity = "CRITICAL"
-                            elif sv in ("H", "HIGH"):
-                                severity = "HIGH"
-                except Exception:
-                    pass
+        cvss_score = 0.0
+        for item in severity_list:
+            score_str = str(item.get("score", ""))
+            # OSV may return either a CVSS vector or a numeric score.
+            try:
+                cvss_score = max(cvss_score, float(score_str))
+            except ValueError:
+                pass
+            upper = score_str.upper()
+            if "/C:H" in upper or "/I:H" in upper or "/A:H" in upper:
+                cvss_score = max(cvss_score, 9.0)
+            if "CRITICAL" in upper:
+                cvss_score = max(cvss_score, 9.0)
+            elif "HIGH" in upper:
+                cvss_score = max(cvss_score, 7.0)
+
+        if cvss_score >= 9.0:
+            severity = "CRITICAL"
+        elif cvss_score >= 7.0:
+            severity = "HIGH"
+        elif cvss_score > 0:
+            severity = "LOW" if cvss_score < 4.0 else "MEDIUM"
 
         db_severity = raw.get("database_specific", {}).get("severity", "")
         if db_severity:
-            severity = db_severity.upper()
+            severity = str(db_severity).upper()
 
         # Extract aliases
         aliases = raw.get("aliases", [])
@@ -154,20 +159,57 @@ class OSVClient:
         self._cache[cache_key] = vulns
         return vulns
 
-    def query_batch(self, packages: List[str], ecosystem: str = "PyPI") -> Dict[str, List[Vulnerability]]:
+    def query_batch(
+        self,
+        packages: List[Union[str, Tuple[str, Optional[str]]]],
+        ecosystem: str = "PyPI",
+    ) -> Dict[str, List[Vulnerability]]:
         """
-        批量查询多个包的漏洞。
+        批量查询多个包的漏洞，优先使用 OSV querybatch 端点。
 
         Args:
-            packages: 包名列表
+            packages: 包名列表，或 (包名, 版本) 元组列表
             ecosystem: 生态系统
 
         Returns:
             {package_name: [vulnerabilities]}
         """
-        results = {}
-        for pkg in packages:
-            results[pkg] = self.query(pkg, ecosystem)
+        normalized: List[Tuple[str, Optional[str]]] = []
+        for item in packages:
+            if isinstance(item, tuple):
+                normalized.append((item[0], item[1]))
+            else:
+                normalized.append((item, None))
+
+        results: Dict[str, List[Vulnerability]] = {pkg: [] for pkg, _ in normalized}
+        if not normalized:
+            return results
+
+        payload = {
+            "queries": [
+                {
+                    "package": {"name": pkg, "ecosystem": ecosystem},
+                    **({"version": version} if version else {}),
+                }
+                for pkg, version in normalized
+            ]
+        }
+        data = self._curl("querybatch", json.dumps(payload))
+        if data and isinstance(data.get("results"), list):
+            for (pkg, _), item in zip(normalized, data.get("results", [])):
+                vulns = []
+                for raw_vuln in item.get("vulns", []) if isinstance(item, dict) else []:
+                    try:
+                        vulns.append(self._parse_vuln(raw_vuln))
+                    except Exception:
+                        continue
+                results[pkg] = vulns
+            self._cache.update({f"{ecosystem}:{pkg}:{version or '*'}": vulns for (pkg, version), vulns in zip(normalized, results.values())})
+            return results
+
+        # Offline/API fallback: keep old per-package behavior.
+        for pkg, version in normalized:
+            results[pkg] = self.query(pkg, ecosystem, version)
         return results
 
     def get_vulnerability(self, vuln_id: str) -> Optional[Vulnerability]:

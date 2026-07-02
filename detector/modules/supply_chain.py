@@ -3,7 +3,7 @@
 奇点造物-Genesisix · Supply Chain Scanner
 AtomCollide-智械工坊 · 2026
 
-融合自 NVIDIA SkillSpector (Apache 2.0) 的供应链安全检测能力。
+面向 Agent 项目的供应链安全检测能力。
 
 检测能力:
   - SC1: 依赖声明解析 (requirements.txt, setup.py, pyproject.toml, package.json)
@@ -22,7 +22,7 @@ import json
 import re
 import subprocess
 from pathlib import Path
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict, Optional, Tuple, Any
 from dataclasses import dataclass
 
 
@@ -138,6 +138,20 @@ def _parse_pyproject_toml(filepath: Path) -> List[Tuple[str, str]]:
     return deps
 
 
+
+
+def _extract_pinned_version(version_spec: str) -> Optional[str]:
+    """Return exact pinned version if the dependency uses ==/exact npm pin; otherwise None."""
+    spec = (version_spec or "").strip()
+    if not spec:
+        return None
+    match = re.match(r"^==\s*([A-Za-z0-9_.!+\-]+)$", spec)
+    if match:
+        return match.group(1)
+    if re.match(r"^[0-9][A-Za-z0-9_.!+\-]*$", spec):
+        return spec
+    return None
+
 def _check_typosquat(pkg_name: str) -> Optional[SupplyChainThreat]:
     """检查包名是否为typosquat"""
     pkg_lower = pkg_name.lower().replace("-", "_").replace(".", "_")
@@ -218,27 +232,29 @@ def _check_suspicious_source(filepath: Path) -> List[SupplyChainThreat]:
     return threats
 
 
-def query_osv(package_name: str, ecosystem: str = "PyPI") -> Optional[Dict]:
+def query_osv(package_name: str, ecosystem: str = "PyPI", version: Optional[str] = None) -> Optional[Dict]:
     """
     查询OSV.dev获取已知漏洞信息。
     离线时返回None。
     """
     try:
-        payload = json.dumps({
-            "package": {"name": package_name, "ecosystem": ecosystem}
-        })
-        result = subprocess.run(
-            ["curl", "-s", "--max-time", "5",
-             "-X", "POST", "https://api.osv.dev/v1/query",
-             "-H", "Content-Type: application/json",
-             "-d", payload],
-            capture_output=True, text=True, timeout=10,
-        )
-        if result.returncode == 0:
-            data = json.loads(result.stdout)
-            vulns = data.get("vulns", [])
-            if vulns:
-                return {"count": len(vulns), "vulns": vulns[:5]}  # Top 5
+        from .osv_client import OSVClient
+
+        client = OSVClient()
+        vulns = client.query(package_name, ecosystem, version)
+        if vulns:
+            return {
+                "count": len(vulns),
+                "vulns": [
+                    {
+                        "id": vuln.vuln_id,
+                        "summary": vuln.summary,
+                        "severity": vuln.severity,
+                        "fixed_version": vuln.fixed_version,
+                    }
+                    for vuln in vulns[:5]
+                ],
+            }
     except Exception:
         pass
     return None
@@ -301,12 +317,23 @@ def scan_dependencies(project_path: str) -> List[SupplyChainThreat]:
     return all_threats
 
 
-def scan_with_osv_lookup(project_path: str, ecosystem: str = "PyPI") -> List[SupplyChainThreat]:
+def scan_with_osv_lookup(
+    project_path: str,
+    ecosystem: str = "PyPI",
+    osv_client: Optional[Any] = None,
+) -> List[SupplyChainThreat]:
     """
     扫描依赖并查询OSV.dev获取实时CVE信息。
     注意: 需要网络访问，离线时跳过OSV查询。
     """
     threats = scan_dependencies(project_path)
+
+    if osv_client is None:
+        try:
+            from .osv_client import OSVClient
+            osv_client = OSVClient()
+        except Exception:
+            osv_client = None
 
     path = Path(project_path)
     for filename, parser in [("requirements.txt", _parse_requirements_txt),
@@ -316,20 +343,34 @@ def scan_with_osv_lookup(project_path: str, ecosystem: str = "PyPI") -> List[Sup
             continue
 
         eco = ecosystem if filename.endswith(".txt") else "npm"
-        deps = parser(filepath)
+        deps = parser(filepath)[:20]
+        package_queries = [(pkg, _extract_pinned_version(ver)) for pkg, ver in deps]
 
-        for pkg, ver in deps[:20]:  # Limit to avoid rate limiting
-            osv_data = query_osv(pkg, eco)
-            if osv_data:
-                threats.append(SupplyChainThreat(
-                    rule_id="SC4", category="Supply Chain",
-                    description=f"Package '{pkg}' has {osv_data['count']} known vulnerabilities (OSV.dev)",
-                    severity="HIGH" if osv_data['count'] > 0 else "LOW",
-                    confidence=0.95,
-                    package_name=pkg,
-                    details=f"Top vuln: {osv_data['vulns'][0].get('id', 'N/A')}" if osv_data['vulns'] else "",
-                    mitigation=f"Update '{pkg}' to latest secure version",
-                ))
+        batch_results = {}
+        if osv_client is not None:
+            try:
+                batch_results = osv_client.query_batch(package_queries, eco)
+            except Exception:
+                batch_results = {}
+
+        for pkg, pinned_version in package_queries:
+            vulns = batch_results.get(pkg, [])
+            if not vulns:
+                continue
+            top = vulns[0]
+            fixed = getattr(top, "fixed_version", None)
+            vuln_id = getattr(top, "vuln_id", "N/A")
+            severity = getattr(top, "severity", "HIGH") or "HIGH"
+            summary = getattr(top, "summary", "")
+            threats.append(SupplyChainThreat(
+                rule_id="SC4", category="Supply Chain",
+                description=f"Package '{pkg}' has {len(vulns)} known vulnerabilities (OSV.dev)",
+                severity=severity if severity in {"CRITICAL", "HIGH", "MEDIUM", "LOW"} else "HIGH",
+                confidence=0.96,
+                package_name=pkg,
+                details=f"Top vuln: {vuln_id}; installed={pinned_version or 'unresolved'}; summary={summary[:120]}",
+                mitigation=f"Update '{pkg}' to {fixed} or latest secure version" if fixed else f"Update '{pkg}' to latest secure version",
+            ))
 
     return threats
 

@@ -3,7 +3,7 @@
 奇点造物-Genesisix · Agent Snooping Detector
 AtomCollide-智械工坊 · 2026
 
-融合自 NVIDIA SkillSpector v2.3.1 (Apache 2.0) 的 Agent Snooping 检测能力。
+面向 Agent 配置安全的窥探行为检测能力。
 
 检测能力:
   - AS1: Agent配置目录访问检测 (.claude/, .codex/, .gemini/)

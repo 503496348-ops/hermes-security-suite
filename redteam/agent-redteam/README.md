@@ -9,7 +9,7 @@ Powered by first-principles red-team methodology from [AtomCollide-智械工坊 
 ### Install
 
 ```bash
-npx skills add https://github.com/503496348-ops/atomguard.git --skill aig-agent-redteam
+git clone https://github.com/503496348-ops/hermes-security-suite.git && cd hermes-security-suite/redteam/agent-redteam
 ```
 
 Alternatively, install from source:

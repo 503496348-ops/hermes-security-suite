@@ -4,7 +4,7 @@
 AtomCollide-智械工坊 · 2026
 
 Detects memory/context poisoning attacks in AI agent skills and prompts.
-Inspired by NVIDIA SkillSpector's memory poisoning category (3 patterns).
+Memory poisoning detection patterns for agent memory safety.
 
 Detection Patterns:
   MP1: Persistent Context Injection — instructions that modify agent memory/state

@@ -3,15 +3,16 @@
 奇点造物-Genesisix · MCP Security Analyzer
 AtomCollide-智械工坊 · 2026
 
-融合自 NVIDIA SkillSpector (Apache 2.0) 的 MCP 安全检测能力，
-适配 Genesisix 6层架构。
+面向 Agent 工具生态的 MCP 安全检测能力，
+适配 Genesisix 多层防护架构。
 
 检测能力:
   - TP1: 隐藏指令注入 (HTML注释/零宽字符/Base64/数据URI)
   - TP2: Unicode同形字混淆 (Cyrillic/Greek → Latin)
   - TP3: 参数描述过长 (>500字符，可能藏恶意指令)
   - TP4: 工具名称仿冒 (与知名工具名相似)
-  - LP1: 最小权限检查 (MCP工具是否请求过多权限)
+  - LP1: 危险能力检查 (MCP工具是否请求过多高危能力)
+  - LP2: 权限范围检查 (通配符、全盘读写、网络全出站、描述/权限不一致)
   - RP1: Rug Pull检测 (工具行为与描述不一致)
 
 Usage:
@@ -237,29 +238,71 @@ def _check_tp4(tool_name: str) -> List[MCPThreat]:
     return threats
 
 
+_DANGEROUS_CAPABILITIES = {
+    "file_write", "file_delete", "shell", "exec", "network",
+    "admin", "root", "sudo", "eval", "compile",
+}
+
+_BROAD_PERMISSION_RE = re.compile(
+    r"(^|:)(\*|all|any|root|admin)(:|$)|/(\*|\*\*)$|network:egress:\*",
+    re.IGNORECASE,
+)
+
+_SCOPE_WORDS = {
+    "file": {"file", "path", "directory", "folder", "read", "write", "delete", "upload", "download"},
+    "network": {"http", "url", "api", "request", "fetch", "web", "network", "egress"},
+    "shell": {"shell", "command", "terminal", "subprocess", "exec", "process"},
+}
+
+
+def _as_string_list(value: Any) -> List[str]:
+    """Best-effort conversion for manifest fields that may be scalar/list/dict."""
+    if value is None:
+        return []
+    if isinstance(value, str):
+        return [value]
+    if isinstance(value, list):
+        return [str(item) for item in value if item is not None]
+    if isinstance(value, dict):
+        items: List[str] = []
+        for key, nested in value.items():
+            if isinstance(nested, bool):
+                if nested:
+                    items.append(str(key))
+            elif isinstance(nested, list):
+                items.extend(f"{key}:{item}" for item in nested)
+            else:
+                items.append(f"{key}:{nested}")
+        return items
+    return [str(value)]
+
+
+def _manifest_text(manifest: Dict[str, Any]) -> str:
+    parts = [str(manifest.get("name", "")), str(manifest.get("description", ""))]
+    for param in manifest.get("parameters") or []:
+        if isinstance(param, dict):
+            parts.append(str(param.get("name", "")))
+            parts.append(str(param.get("description", "")))
+    return " ".join(parts).lower()
+
+
 def _check_lp1(manifest: Dict[str, Any]) -> List[MCPThreat]:
     """最小权限检查 — MCP工具请求过多权限"""
     threats: List[MCPThreat] = []
 
-    # Check for dangerous capability declarations
-    dangerous_caps = {
-        "file_write", "file_delete", "shell", "exec", "network",
-        "admin", "root", "sudo", "eval", "compile",
-    }
+    capabilities = _as_string_list(manifest.get("capabilities"))
+    for cap in capabilities:
+        cap_lower = cap.lower().strip()
+        base_cap = re.split(r"[:./]", cap_lower, maxsplit=1)[0]
+        if cap_lower in _DANGEROUS_CAPABILITIES or base_cap in _DANGEROUS_CAPABILITIES:
+            threats.append(MCPThreat(
+                rule_id="LP1", category="MCP Least Privilege",
+                description=f"Tool declares dangerous capability: '{cap}'",
+                severity="HIGH", confidence=0.82,
+                source_field="capabilities", matched_text=cap,
+                mitigation=f"Replace '{cap}' with a narrow resource-scoped permission",
+            ))
 
-    capabilities = manifest.get("capabilities", [])
-    if isinstance(capabilities, list):
-        for cap in capabilities:
-            if isinstance(cap, str) and cap.lower() in dangerous_caps:
-                threats.append(MCPThreat(
-                    rule_id="LP1", category="MCP Least Privilege",
-                    description=f"Tool declares dangerous capability: '{cap}'",
-                    severity="HIGH", confidence=0.80,
-                    source_field="capabilities", matched_text=cap,
-                    mitigation=f"Remove '{cap}' capability unless strictly necessary",
-                ))
-
-    # Check for overly broad permissions in parameters
     params = manifest.get("parameters", [])
     if isinstance(params, list):
         for param in params:
@@ -267,17 +310,87 @@ def _check_lp1(manifest: Dict[str, Any]) -> List[MCPThreat]:
                 continue
             pname = param.get("name", "")
             pdesc = str(param.get("description", ""))
-            # Parameters that suggest unrestricted access
-            if re.search(r"arbitrary|any\s+file|all\s+files|everything|unrestricted", pdesc, re.IGNORECASE):
+            if re.search(r"arbitrary|any\s+file|all\s+files|everything|unrestricted|entire\s+(disk|filesystem)", pdesc, re.IGNORECASE):
                 threats.append(MCPThreat(
                     rule_id="LP1", category="MCP Least Privilege",
                     description=f"Parameter '{pname}' requests unrestricted access",
-                    severity="HIGH", confidence=0.85,
+                    severity="HIGH", confidence=0.87,
                     source_field=f"parameters.{pname}", matched_text=pdesc[:100],
-                    mitigation="Restrict parameter scope to specific resources",
+                    mitigation="Restrict parameter scope to specific resources and explicit allowlists",
                 ))
 
     return threats
+
+
+def _check_lp2(manifest: Dict[str, Any]) -> List[MCPThreat]:
+    """权限范围检查 — 通配符、全出站、权限/描述不一致。"""
+    threats: List[MCPThreat] = []
+    permissions = _as_string_list(manifest.get("permissions")) + _as_string_list(manifest.get("scopes"))
+    text = _manifest_text(manifest)
+
+    for perm in permissions:
+        if _BROAD_PERMISSION_RE.search(perm):
+            threats.append(MCPThreat(
+                rule_id="LP2", category="MCP Least Privilege",
+                description=f"Permission uses wildcard or broad scope: '{perm}'",
+                severity="CRITICAL" if "*" in perm else "HIGH", confidence=0.90,
+                source_field="permissions", matched_text=perm,
+                mitigation="Replace wildcard scopes with explicit paths, hosts, methods, and operations",
+            ))
+
+    requested_kinds = set()
+    for perm in permissions + _as_string_list(manifest.get("capabilities")):
+        lower = perm.lower()
+        for kind in _SCOPE_WORDS:
+            if kind in lower:
+                requested_kinds.add(kind)
+
+    described_kinds = {kind for kind, words in _SCOPE_WORDS.items() if any(word in text for word in words)}
+    for kind in sorted(requested_kinds - described_kinds):
+        threats.append(MCPThreat(
+            rule_id="LP2", category="MCP Least Privilege",
+            description=f"Manifest requests {kind} access but description does not justify that scope",
+            severity="MEDIUM", confidence=0.68,
+            source_field="permissions", matched_text=", ".join(permissions)[:120],
+            mitigation=f"Document why {kind} access is needed or remove the permission",
+        ))
+
+    return threats
+
+
+def build_least_privilege_profile(manifest: Dict[str, Any]) -> Dict[str, Any]:
+    """Generate an actionable least-privilege reduction plan for an MCP manifest."""
+    capabilities = _as_string_list(manifest.get("capabilities"))
+    permissions = _as_string_list(manifest.get("permissions")) + _as_string_list(manifest.get("scopes"))
+    dangerous = []
+    for cap in capabilities:
+        cap_lower = cap.lower().strip()
+        base_cap = re.split(r"[:./]", cap_lower, maxsplit=1)[0]
+        if cap_lower in _DANGEROUS_CAPABILITIES or base_cap in _DANGEROUS_CAPABILITIES:
+            dangerous.append(cap)
+
+    broad_permissions = [perm for perm in permissions if _BROAD_PERMISSION_RE.search(perm)]
+    recommended = [perm for perm in permissions if perm not in broad_permissions]
+    if not recommended:
+        recommended = [cap for cap in capabilities if cap not in dangerous and not _BROAD_PERMISSION_RE.search(cap)]
+
+    risk_score = min(100, len(dangerous) * 22 + len(broad_permissions) * 28)
+    recommendations = []
+    if dangerous:
+        recommendations.append("Replace dangerous capabilities with operation-specific permissions.")
+    if broad_permissions:
+        recommendations.append("Replace wildcard permissions with explicit resource allowlists.")
+    if not recommended:
+        recommendations.append("Define at least one narrow permission such as files:read:/workspace/docs/*.md.")
+
+    return {
+        "tool_name": str(manifest.get("name", "unknown")),
+        "dangerous_capabilities": dangerous,
+        "broad_permissions": broad_permissions,
+        "recommended_capabilities": recommended,
+        "risk_score": risk_score,
+        "recommendations": recommendations,
+    }
 
 
 def _extract_metadata_texts(manifest: Dict[str, Any]) -> List[Tuple[str, str, bool]]:
@@ -335,8 +448,9 @@ def scan_mcp_manifest(manifest: Dict[str, Any], source_file: str = "SKILL.md") -
     tool_name = manifest.get("name", "")
     all_threats.extend(_check_tp4(tool_name))
 
-    # LP1: Least privilege
+    # LP1/LP2: Least privilege
     all_threats.extend(_check_lp1(manifest))
+    all_threats.extend(_check_lp2(manifest))
 
     return all_threats
 

@@ -1,6 +1,6 @@
-# 🛡️ Hermes Security Suite — Agent安全四件套
+# 🛡️ Hermes Security Suite — Agent安全五件套
 
-> **检测 · 诊断 · 防护 · 红队** — AI Agent 全链路安全框架
+> **检测 · 诊断 · 防护 · 红队 · 流水线** — AI Agent 全链路安全框架
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Hermes Agent](https://img.shields.io/badge/Hermes-Agent-blue)](https://github.com/503496348-ops/hermes-agent)
@@ -35,7 +35,7 @@
 
 ### 1. Detector — 安全检测引擎 (`detector/`)
 
-825+条规则，16层防护（含AST行为分析、数据流污点追踪、YARA签名扫描）：
+830+条规则，17层防护（含AST行为分析、数据流污点追踪、YARA签名扫描、MCP最小权限与OSV查询）：
 
 | 层 | 覆盖范围 | 规则数 |
 |---|---------|-------|
@@ -56,6 +56,8 @@
 | 污点追踪层 | Source→Sink数据流分析（凭据泄露/RCE/数据外泄） | 5规则 |
 | Agent Snooping层 | Agent配置窥探、MCP配置窃取、技能枚举 | 3规则（AS1-AS3） |
 | YARA签名层 | 恶意软件/Webshell/挖矿/黑客工具签名扫描 | 20+规则 |
+| MCP最小权限层 | 工具投毒、权限通配、能力/描述不一致、工具名仿冒 | 6规则 |
+| OSV漏洞层 | OSV.dev批量漏洞查询、版本感知修复建议 | 实时查询 |
 
 ```python
 from detector.genesisix_detector import GenesisixDetector
@@ -65,13 +67,19 @@ result = detector.scan("用户输入内容")
 
 # 分层扫描
 result = detector.scan_llm("prompt内容")
-result = detector.scan_outbound("https://example.com")
+result = detector.scan_outbound("https://example.org")
 result = detector.scan_mcp(tool_schema, tool_output)
 result = detector.scan_multiturn(message_history)
 # 新增: AST行为分析 / 污点追踪 / YARA签名扫描
 result = detector.scan_code_ast(source_code, "plugin.py")
 result = detector.scan_code_taint(source_code, "plugin.py")
 result = detector.scan_yara(file_content, "script.sh")
+
+from detector.modules.mcp_analyzer import scan_mcp_manifest, build_least_privilege_profile
+from detector.modules.supply_chain import scan_with_osv_lookup
+threats = scan_mcp_manifest({"name": "report-tool", "capabilities": ["file_write"]})
+profile = build_least_privilege_profile({"name": "report-tool", "capabilities": ["file_write"]})
+vulns = scan_with_osv_lookup("/path/to/project")
 ```
 
 ### 2. Doctor — 自诊断与自愈 (`doctor/`)
@@ -117,9 +125,6 @@ rules:
 - 🔗 **工作流攻击**: 多步任务链滥用、RAG间接注入
 
 ```bash
-# 安装 Agent RedTeam Skill
-npx skills add https://github.com/503496348-ops/hermes-security-suite.git --skill agent-redteam
-
 # MCP Server 安全扫描
 cd redteam/mcp-scan && python main.py --repo /path/to/project
 
@@ -180,8 +185,9 @@ hermes-security-suite/
 - [x] v1.0: 825条规则 + 13层检测
 - [x] v2.0: 自学习循环 + Hermes原生集成
 - [x] v2.1: RedTeam模块 — Agent演习 + MCP审计 + 越狱测试 (整合红队能力)
-- [ ] v2.2: Doctor诊断 + 飞书告警
-- [ ] v2.3: Hook实时防护 + 策略热更
+- [x] v2.4: MCP最小权限 + OSV实时漏洞查询
+- [ ] v2.5: Doctor诊断 + 飞书告警
+- [ ] v2.6: Hook实时防护 + 策略热更
 - [ ] v3.0: Skill安全市场 + 社区规则贡献
 
 ## 📄 License

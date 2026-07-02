@@ -3,7 +3,7 @@
 奇点造物-Genesisix · Agent Scan Pipeline
 AtomCollide-智械工坊 · 2026
 
-融合自 Tencent AI-Infra-Guard v4.1.14 (Apache 2.0) 的 Agent-Scan 框架架构。
+面向 Agent 安全审计的三阶段扫描框架。
 
 三阶段流水线:
   1. 信息收集 — 收集目标配置、能力和暴露的端点
@@ -114,6 +114,8 @@ RULE_TO_OWASP = {
     "LP2": "ASI-04",  # Tool Abuse (MCP)
     "TP1": "ASI-04",  # Tool Abuse (MCP)
     "TP2": "ASI-04",  # Tool Abuse (MCP)
+    "TP3": "ASI-04",  # Tool Abuse (MCP)
+    "TP4": "ASI-04",  # Tool Abuse (MCP)
 }
 
 

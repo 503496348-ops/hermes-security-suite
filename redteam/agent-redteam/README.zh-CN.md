@@ -9,7 +9,7 @@
 ### 安装
 
 ```bash
-npx skills add https://github.com/503496348-ops/atomguard.git --skill aig-agent-redteam
+git clone https://github.com/503496348-ops/hermes-security-suite.git && cd hermes-security-suite/redteam/agent-redteam
 ```
 
 备选方案，从源码安装：
