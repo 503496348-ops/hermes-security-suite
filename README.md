@@ -366,3 +366,7 @@ AtomCollide-智械工坊团队出品。更多产品见：[AtomCollide Product Ma
 - 奇点造物新增 Bridge Security Invariants：prompt secret redaction、workspace allowlist、callback nonce 安全门禁。
 - 新增模块：`core/bridge_security_invariants.py`
 - 来源模式：飞书/Lark 消息入口、本地 Claude/Codex 执行、会话 fingerprint、profile 隔离与安全门禁。
+
+## Generic orchestration security invariants
+
+Adds controls for high-risk action confirmation, operator-only model changes, webhook URL allowlists, HTTPS enforcement, and wildcard CORS rejection.
