@@ -1,7 +1,7 @@
 ---
 name: hermes-security-suite
 description: "Hermes Agent安全五件套 — 检测(Detector: 830+规则/17层) + 诊断(Doctor: 自诊断自愈) + 防护(Hooks: 实时拦截) + 红队(RedTeam: Agent演习) + 流水线(Pipeline: 三阶段扫描)。当需要扫描AI Agent安全威胁、运行安全诊断、配置实时防护策略、进行安全演习、执行自动化扫描时使用。"
-version: 2.4.0
+version: 2.5.0
 author: 奇点造物
 license: MIT
 metadata:
@@ -140,3 +140,8 @@ Framework: OWASP LLMT09 (Misinformation), ASI-SR-003 (Least Knowledge)
 - [ ] 3. 对MCP manifest执行工具投毒与最小权限扫描
 - [ ] 4. 对项目依赖执行供应链与OSV漏洞查询
 - [ ] 5. 验证输出结果并按严重程度给出修复建议
+
+## 2026-07-03 运行时增强
+
+- 新增运行时权限守卫与漏洞批次汇总：检测过宽工具权限、敏感工具缺 scope、供应链高风险密度阻断。
+- 验证：新增模块通过 py_compile 和定向 pytest，代码不依赖外部服务。

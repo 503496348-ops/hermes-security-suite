@@ -118,7 +118,7 @@ rules:
 | **Prompt Security** | 提示词安全评估和越狱测试 | `redteam/prompt-security/cli_run.py` |
 
 **Agent RedTeam 核心能力**:
-- 🔍 **基础设施扫描**: 80+ AI服务指纹识别 + CVE匹配 (Ollama, vLLM, Dify 等)
+- 🔍 **基础设施扫描**: 80+ AI服务指纹识别 + CVE匹配（覆盖本地模型服务、推理网关与工作流服务器）
 - 📝 **代码审计**: Skill源码分析、MCP Server审计、供应链检查
 - 🎯 **动态测试**: 30+ 提示注入载荷，自适应变异
 - 🔓 **越狱评估**: LLM边界测试，18+ 单轮攻击 + 6+ 多轮攻击算子
@@ -337,3 +337,8 @@ AtomCollide-智械工坊团队出品。更多产品见：[AtomCollide Product Ma
 - [CONTRIBUTING](CONTRIBUTING.md)
 
 
+
+## 2026-07-03 运行时增强
+
+- 新增运行时权限守卫与漏洞批次汇总：检测过宽工具权限、敏感工具缺 scope、供应链高风险密度阻断。
+- 交付物包含可导入模块与定向单元测试。
