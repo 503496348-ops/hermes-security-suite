@@ -1,4 +1,4 @@
-from core.orchestration_security_policy import validate_action_request, validate_cors_origins, validate_webhook_url
+from core.agent_action_security_policy import validate_action_request, validate_cors_origins, validate_webhook_url
 
 
 def test_webhook_url_requires_https_and_allowed_domain():

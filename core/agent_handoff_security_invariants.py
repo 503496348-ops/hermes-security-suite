@@ -1,4 +1,4 @@
-"""Security invariants for Feishu/Lark coding-agent bridges."""
+"""Security invariants for agent handoff callbacks and workspaces."""
 from __future__ import annotations
 from dataclasses import dataclass
 from typing import Iterable

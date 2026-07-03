@@ -2,9 +2,13 @@
   "repo": "hermes-security-suite",
   "entrypoints": [
     "redteam/agent-scan/main.py",
-    "redteam/mcp-scan/main.py"
+    "redteam/mcp-scan/main.py",
+    "core/genesisix_detector.py",
+    "detector/genesisix_detector.py"
   ],
   "smoke_targets": [
+    "core/agent_action_security_policy.py",
+    "core/agent_handoff_security_invariants.py",
     "detector/modules/mcp_runtime_guard.py",
     "doctor/scripts/hermes_doctor.py",
     "redteam/agent-redteam/scripts/common/http_probe.py",
@@ -31,7 +35,23 @@
     "redteam/prompt-security/deepteam/metrics/excessive_agency/template.py",
     "redteam/prompt-security/deepteam/metrics/rbac/template.py",
     "redteam/prompt-security/deepteam/vulnerabilities/illegal_activity/template.py",
-    "scripts/product_convergence_gate.py"
+    "scripts/product_convergence_gate.py",
+    "redteam/agent-redteam/modules/infra-attack/data/fingerprints/comfyui/comfyui-comfy-mtb.yaml",
+    "redteam/agent-redteam/modules/infra-attack/data/fingerprints/comfyui/comfyui-custom-preview.yaml",
+    "redteam/agent-redteam/modules/infra-attack/data/fingerprints/comfyui/comfyui-custom-scripts.yaml",
+    "redteam/agent-redteam/modules/infra-attack/data/fingerprints/comfyui/comfyui.yaml",
+    "redteam/agent-redteam/modules/infra-attack/data/fingerprints/dify.yaml",
+    "redteam/agent-redteam/modules/infra-attack/data/fingerprints/text-generation-webui.yaml",
+    "redteam/agent-redteam/modules/model-attack/data/eval_datasets/privacy-leakage.json",
+    "redteam/agent-redteam/modules/model-attack/data/eval_datasets/unethical-behavior.json",
+    "redteam/agent-scan/config/provider_config_en.json",
+    "redteam/agent-scan/config/provider_config_zh.json",
+    "redteam/agent-scan/core/agent_adapter/providers.yaml"
   ],
-  "policy": "External/fusion references are allowed only when explicitly reviewed here; new fusion work must add a smoke target or entrypoint wiring."
+  "policy": "Cross-cutting runtime/bridge/workflow modules must be domain-mapped and referenced by declared entrypoints or smoke targets; generic orphan modules fail the convergence gate.",
+  "domain_mappings": {
+    "core/agent_action_security_policy.py": "Genesisix agent action security policy for confirmation, webhook and CORS invariants",
+    "core/agent_handoff_security_invariants.py": "Genesisix agent handoff security invariants for callback nonce, workspace and redaction checks",
+    "detector/modules/mcp_runtime_guard.py": "Genesisix MCP runtime guard for tool-call and server-surface hardening"
+  }
 }

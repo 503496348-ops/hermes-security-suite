@@ -1,4 +1,4 @@
-"""Security invariants for generic orchestration control planes."""
+"""Security invariants for agent action control surfaces."""
 from __future__ import annotations
 
 from dataclasses import dataclass

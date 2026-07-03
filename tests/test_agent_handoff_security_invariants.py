@@ -1,4 +1,4 @@
-from core.bridge_security_invariants import BridgeSecurityInvariantChecker, gate
+from core.agent_handoff_security_invariants import BridgeSecurityInvariantChecker, gate
 
 
 def test_bridge_security_gate_blocks_secret_and_workspace_escape():
