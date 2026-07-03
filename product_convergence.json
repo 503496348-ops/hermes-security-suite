@@ -1,0 +1,37 @@
+{
+  "repo": "hermes-security-suite",
+  "entrypoints": [
+    "redteam/agent-scan/main.py",
+    "redteam/mcp-scan/main.py"
+  ],
+  "smoke_targets": [
+    "detector/modules/mcp_runtime_guard.py",
+    "doctor/scripts/hermes_doctor.py",
+    "redteam/agent-redteam/scripts/common/http_probe.py",
+    "scripts/product_convergence_gate.py"
+  ],
+  "known_external_reference_files": [
+    "modules/security_extensions/memory_poisoning_detector.py",
+    "redteam/README.md",
+    "redteam/agent-redteam/README.md",
+    "redteam/agent-redteam/README.zh-CN.md",
+    "redteam/agent-redteam/scripts/profiler.py",
+    "redteam/agent-scan/README.md",
+    "redteam/agent-scan/core/agent.py",
+    "redteam/agent-scan/core/agent_adapter/adapter.py",
+    "redteam/agent-scan/core/report/models.py",
+    "redteam/agent-scan/core/report/report.py",
+    "redteam/agent-scan/prompt/skills/authorization-bypass-detection/SKILL.md",
+    "redteam/agent-scan/tools/dialogue/scan.py",
+    "redteam/agent-scan/tools/test_dispatcher.py",
+    "redteam/prompt-security/LICENSE.md",
+    "redteam/prompt-security/deepteam/attacks/multi_turn/crescendo_jailbreaking/template.py",
+    "redteam/prompt-security/deepteam/attacks/single_turn/jam/template.py",
+    "redteam/prompt-security/deepteam/metrics/bfla/template.py",
+    "redteam/prompt-security/deepteam/metrics/excessive_agency/template.py",
+    "redteam/prompt-security/deepteam/metrics/rbac/template.py",
+    "redteam/prompt-security/deepteam/vulnerabilities/illegal_activity/template.py",
+    "scripts/product_convergence_gate.py"
+  ],
+  "policy": "External/fusion references are allowed only when explicitly reviewed here; new fusion work must add a smoke target or entrypoint wiring."
+}
