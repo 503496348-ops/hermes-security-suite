@@ -1,7 +1,7 @@
 ---
 name: hermes-security-suite
 description: "Hermes Agent安全五件套 — 检测(Detector: 830+规则/17层) + 诊断(Doctor: 自诊断自愈) + 防护(Hooks: 实时拦截) + 红队(RedTeam: Agent演习) + 流水线(Pipeline: 三阶段扫描)。当需要扫描AI Agent安全威胁、运行安全诊断、配置实时防护策略、进行安全演习、执行自动化扫描时使用。"
-version: 2.5.0
+version: 2.6.0
 author: 奇点造物
 license: MIT
 metadata:
@@ -24,6 +24,10 @@ triggers:
 > 📖 详细技术文档见 references/ 目录
 
 # Hermes Security Suite — Agent安全五件套
+
+## Runtime Security Batch Guard（v2.6.0）
+
+新增 `core/mcp_runtime_security.py`：对工具清单做最小权限审计、工具元数据投毒检测，并把依赖漏洞查询结果汇总成可阻断的批次守卫。该模块不内置网络调用，适合接入 hooks、CI 与离线诊断。
 
 > 检测 · 诊断 · 防护 · 红队 · 流水线 — AI Agent 全链路安全框架
 
