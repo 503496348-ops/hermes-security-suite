@@ -21,6 +21,7 @@ Usage:
 from __future__ import annotations
 
 import ast
+import re
 from dataclasses import dataclass, field
 from typing import List, Optional, Tuple
 
@@ -111,7 +112,16 @@ _RULE_META: dict[str, dict] = {
         "confidence": 0.50,
         "mitigation": "Use getattr() with a whitelist of allowed attribute names",
     },
+    "AST9": {
+        "message": "Environment secret is sent to a remote endpoint",
+        "severity": "critical",
+        "confidence": 0.94,
+        "mitigation": "Never include credentials in network payloads; use a reviewed secret-handling boundary",
+    },
 }
+
+_NETWORK_CALL_PREFIXES = ("requests.", "httpx.", "urllib.request.", "aiohttp.")
+_SECRET_NAME_RE = re.compile(r"(?:api|access|auth|bearer|client|private|secret|token|password|passwd|key)", re.IGNORECASE)
 
 
 # ============================================================
@@ -171,6 +181,21 @@ def _get_source_segment(lines: list[str], lineno: int, end_lineno: Optional[int]
     start = max(0, lineno - 1)
     end = end_lineno if end_lineno else lineno
     return "\n".join(lines[start:end])[:300]
+
+
+def _secret_environment_source(node: ast.AST) -> Optional[str]:
+    """Return a secret-like environment key read by *node*, if statically visible."""
+    for child in ast.walk(node):
+        if isinstance(child, ast.Call) and _resolve_call_name(child) in {"os.getenv", "os.environ.get"}:
+            if child.args and isinstance(child.args[0], ast.Constant) and isinstance(child.args[0].value, str):
+                name = child.args[0].value
+                if _SECRET_NAME_RE.search(name):
+                    return name
+        if isinstance(child, ast.Subscript) and _resolve_call_name(ast.Call(func=child.value, args=[], keywords=[])) == "os.environ":
+            slice_node = child.slice
+            if isinstance(slice_node, ast.Constant) and isinstance(slice_node.value, str) and _SECRET_NAME_RE.search(slice_node.value):
+                return slice_node.value
+    return None
 
 
 # ============================================================
@@ -252,6 +277,12 @@ def _analyze_python(content: str, filename: str) -> List[ASTThreat]:
             attr = call_name.split(".", 1)[1]
             if attr in _OS_EXEC_CALLS:
                 _emit("AST5", lineno, end_lineno)
+
+        # Network calls that carry a statically visible environment credential.
+        elif call_name.startswith(_NETWORK_CALL_PREFIXES):
+            secret_name = _secret_environment_source(ast_node)
+            if secret_name:
+                _emit("AST9", lineno, end_lineno, f"Network call sends environment secret '{secret_name}'")
 
         # getattr() with dynamic attribute
         elif call_name == "getattr" and len(ast_node.args) >= 2:
