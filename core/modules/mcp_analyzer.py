@@ -13,7 +13,7 @@ AtomCollide-智械工坊 · 2026
   - TP4: 工具名称仿冒 (与知名工具名相似)
   - LP1: 危险能力检查 (MCP工具是否请求过多高危能力)
   - LP2: 权限范围检查 (通配符、全盘读写、网络全出站、描述/权限不一致)
-  - RP1: Rug Pull检测 (工具行为与描述不一致)
+  - RP1-RP3: Rug Pull检测 (对比可信基线的能力、权限与范围漂移)
 
 Usage:
     from modules.mcp_analyzer import scan_mcp_manifest
@@ -358,6 +358,64 @@ def _check_lp2(manifest: Dict[str, Any]) -> List[MCPThreat]:
     return threats
 
 
+def _normalized_permissions(manifest: Dict[str, Any]) -> set[str]:
+    """Return declared permissions/scopes in a stable, case-insensitive form."""
+    return {
+        permission.lower().strip()
+        for permission in (
+            _as_string_list(manifest.get("permissions"))
+            + _as_string_list(manifest.get("scopes"))
+        )
+        if permission.strip()
+    }
+
+
+def _check_rug_pull(manifest: Dict[str, Any], baseline: Dict[str, Any]) -> List[MCPThreat]:
+    """Detect security-relevant manifest drift from a trusted prior snapshot."""
+    threats: List[MCPThreat] = []
+    if manifest.get("name") != baseline.get("name"):
+        return threats
+
+    current_capabilities = {item.lower().strip() for item in _as_string_list(manifest.get("capabilities"))}
+    prior_capabilities = {item.lower().strip() for item in _as_string_list(baseline.get("capabilities"))}
+    new_capabilities = sorted(current_capabilities - prior_capabilities)
+    risky_capabilities = [
+        capability for capability in new_capabilities
+        if capability in _DANGEROUS_CAPABILITIES
+        or re.split(r"[:./]", capability, maxsplit=1)[0] in _DANGEROUS_CAPABILITIES
+    ]
+    if risky_capabilities:
+        threats.append(MCPThreat(
+            rule_id="RP1", category="MCP Rug Pull",
+            description="Trusted tool added high-risk capabilities: " + ", ".join(risky_capabilities),
+            severity="CRITICAL", confidence=0.96,
+            source_field="capabilities", matched_text=", ".join(risky_capabilities),
+            mitigation="Block the version change until capability expansion is explicitly reviewed and approved",
+        ))
+
+    current_permissions = _normalized_permissions(manifest)
+    prior_permissions = _normalized_permissions(baseline)
+    new_permissions = sorted(current_permissions - prior_permissions)
+    broad_new_permissions = [permission for permission in new_permissions if _BROAD_PERMISSION_RE.search(permission)]
+    if broad_new_permissions:
+        threats.append(MCPThreat(
+            rule_id="RP2", category="MCP Rug Pull",
+            description="Trusted tool expanded to wildcard or broad permissions: " + ", ".join(broad_new_permissions),
+            severity="CRITICAL", confidence=0.97,
+            source_field="permissions", matched_text=", ".join(broad_new_permissions),
+            mitigation="Reject broad scope expansion; require explicit resources, hosts, and operations",
+        ))
+    elif new_permissions:
+        threats.append(MCPThreat(
+            rule_id="RP3", category="MCP Rug Pull",
+            description="Trusted tool added new permissions: " + ", ".join(new_permissions),
+            severity="HIGH", confidence=0.88,
+            source_field="permissions", matched_text=", ".join(new_permissions),
+            mitigation="Review and approve every newly requested permission before deployment",
+        ))
+    return threats
+
+
 def build_least_privilege_profile(manifest: Dict[str, Any]) -> Dict[str, Any]:
     """Generate an actionable least-privilege reduction plan for an MCP manifest."""
     capabilities = _as_string_list(manifest.get("capabilities"))
@@ -422,7 +480,11 @@ def _extract_metadata_texts(manifest: Dict[str, Any]) -> List[Tuple[str, str, bo
     return results
 
 
-def scan_mcp_manifest(manifest: Dict[str, Any], source_file: str = "SKILL.md") -> List[MCPThreat]:
+def scan_mcp_manifest(
+    manifest: Dict[str, Any],
+    source_file: str = "SKILL.md",
+    baseline: Dict[str, Any] | None = None,
+) -> List[MCPThreat]:
     """
     扫描MCP工具manifest，检测所有已知威胁模式。
 
@@ -451,6 +513,8 @@ def scan_mcp_manifest(manifest: Dict[str, Any], source_file: str = "SKILL.md") -
     # LP1/LP2: Least privilege
     all_threats.extend(_check_lp1(manifest))
     all_threats.extend(_check_lp2(manifest))
+    if baseline is not None:
+        all_threats.extend(_check_rug_pull(manifest, baseline))
 
     return all_threats
 
