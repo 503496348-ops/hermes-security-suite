@@ -8,7 +8,8 @@
     "smoke": "python3 scripts/smoke.py",
     "check:syntax": "python3 -m py_compile scripts/*.py",
     "test": "python3 -m pytest tests/test_one_click_open_box.py -q",
-    "api": "python3 scripts/hermes_security_suite_api.py"
+    "api": "python3 scripts/hermes_security_suite_api.py",
+    "skillspector:bridge": "python3 scripts/skillspector_bridge.py --sample --compact"
   },
   "dependencies": {
     "fastapi": "^0.115.0",

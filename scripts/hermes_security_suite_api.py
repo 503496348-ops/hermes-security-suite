@@ -58,6 +58,29 @@ def create_app():
     def diag_latest(limit: int = 10):
         return latest_runs(limit=limit)
 
+    @app.get('/diag/skillspector')
+    def diag_skillspector(project: str = '', sample: bool = True):
+        cmd = [sys.executable, str(ROOT / 'scripts' / 'skillspector_bridge.py')]
+        if sample:
+            cmd.append('--sample')
+        else:
+            return {'ok': False, 'error': '目前仅支持 sample=True 快速探测'}
+        if project:
+            cmd += ['--project', project]
+        cp = subprocess.run(cmd + ['--json'], capture_output=True, text=True, timeout=120, cwd=ROOT)
+        if cp.returncode != 0:
+            return {'ok': False, 'exit_code': cp.returncode, 'error': (cp.stderr or cp.stdout).strip()[:800]}
+        try:
+            payload = json.loads(cp.stdout)
+        except Exception:
+            return {'ok': False, 'error': '桥接输出不是合法 JSON'}
+        return {
+            'ok': bool(payload.get('ok', False)),
+            'tool_count': payload.get('tool_count', 0),
+            'summary': payload.get('mcp_summary', {}),
+            'vulnerability_summary': payload.get('vulnerability_summary', {}),
+        }
+
     @app.post('/diag/run')
     def diag_run():
         passed, checks = _run_doctor()

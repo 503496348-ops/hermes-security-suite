@@ -44,6 +44,14 @@ def collect_run_report(root: Path | None = None) -> dict:
         except Exception:
             add('product convergence gate', False, '运行 python scripts/product_convergence_gate.py --json 查看详情')
 
+    bridge = root / 'scripts' / 'skillspector_bridge.py'
+    if bridge.exists():
+        try:
+            subprocess.check_call([sys.executable, str(bridge), '--sample', '--compact', '--json'], cwd=root, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            add('skillspector bridge sample', True)
+        except Exception:
+            add('skillspector bridge sample', False, '运行 python3 scripts/skillspector_bridge.py --sample --json 失败')
+
     return {
         'checked_at': datetime.utcnow().isoformat() + 'Z',
         'passed': ok,

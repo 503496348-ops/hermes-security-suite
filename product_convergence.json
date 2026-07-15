@@ -13,7 +13,8 @@
     "doctor/scripts/hermes_doctor.py",
     "redteam/agent-redteam/scripts/common/http_probe.py",
     "scripts/product_convergence_gate.py",
-    "core/mcp_runtime_security.py"
+    "core/mcp_runtime_security.py",
+    "scripts/skillspector_bridge.py"
   ],
   "known_external_reference_files": [
     "modules/security_extensions/memory_poisoning_detector.py",
@@ -54,6 +55,7 @@
     "core/agent_action_security_policy.py": "Genesisix agent action security policy for confirmation, webhook and CORS invariants",
     "core/agent_handoff_security_invariants.py": "Genesisix agent handoff security invariants for callback nonce, workspace and redaction checks",
     "detector/modules/mcp_runtime_guard.py": "Genesisix MCP runtime guard for tool-call and server-surface hardening",
-    "core/mcp_runtime_security.py": "Genesisix runtime security batch guard for least-privilege manifests, metadata poisoning and dependency severity summaries"
+    "core/mcp_runtime_security.py": "Genesisix runtime security batch guard for least-privilege manifests, metadata poisoning and dependency severity summaries",
+    "scripts/skillspector_bridge.py": "SkillSpector bridge diagnostics for MCP poisoning, least-privilege audit and OSV batch evidence bridge"
   }
 }

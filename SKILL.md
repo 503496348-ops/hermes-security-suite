@@ -172,6 +172,22 @@ Framework: OWASP LLMT09 (Misinformation), ASI-SR-003 (Least Knowledge)
 - 新增模块：`core/agent_handoff_security_invariants.py`
 - 来源模式：飞书/Lark 消息入口、本地 Claude/Codex 执行、会话 fingerprint、profile 隔离与安全门禁。
 
+## NVIDIA SkillSpector Bridge
+
+- 新增 `scripts/skillspector_bridge.py`：接受 SkillSpector 风格清单，输出统一 MCP 安全扫描结果。
+- 对每个 manifest 执行：
+  - MCP manifest 扫描（TP1~TP4）
+  - 最小权限与权限边界交叉核验
+  - 依赖项目在 `scan_with_osv_lookup` 下的 OSV 风险聚合
+- 与原生 `doctor` 集成：一键运行 `python3 scripts/skillspector_bridge.py --sample --json`，用于冒烟与接口兼容校验。
+
+### API 入口示例
+
+```bash
+python3 scripts/hermes_security_suite_api.py  # includes /diag endpoint
+```
+
+
 ## Generic orchestration security invariants
 
 Adds controls for high-risk action confirmation, operator-only model changes, webhook URL allowlists, HTTPS enforcement, and wildcard CORS rejection.
