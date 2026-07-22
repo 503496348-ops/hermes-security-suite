@@ -232,7 +232,7 @@ def _check_suspicious_source(filepath: Path) -> List[SupplyChainThreat]:
     return threats
 
 
-def query_osv(package_name: str, ecosystem: str = "PyPI", version: Optional[str] = None) -> Optional[Dict]:
+def query_osv(package_name: str, ecosystem: str = "PyPI", version: Optional[str] = None, osv_api_url: Optional[str] = None) -> Optional[Dict]:
     """
     查询OSV.dev获取已知漏洞信息。
     离线时返回None。
@@ -240,7 +240,7 @@ def query_osv(package_name: str, ecosystem: str = "PyPI", version: Optional[str]
     try:
         from .osv_client import OSVClient
 
-        client = OSVClient()
+        client = OSVClient(api_url=osv_api_url)
         vulns = client.query(package_name, ecosystem, version)
         if vulns:
             return {
@@ -321,6 +321,7 @@ def scan_with_osv_lookup(
     project_path: str,
     ecosystem: str = "PyPI",
     osv_client: Optional[Any] = None,
+    osv_api_url: Optional[str] = None,
 ) -> List[SupplyChainThreat]:
     """
     扫描依赖并查询OSV.dev获取实时CVE信息。
@@ -331,7 +332,7 @@ def scan_with_osv_lookup(
     if osv_client is None:
         try:
             from .osv_client import OSVClient
-            osv_client = OSVClient()
+            osv_client = OSVClient(api_url=osv_api_url)
         except Exception:
             osv_client = None
 

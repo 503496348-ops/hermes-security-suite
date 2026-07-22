@@ -153,7 +153,7 @@ def _serialize_vulns(vulns: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
-def _run_bridge(manifest_payload: dict[str, Any], sample: bool = False, project_path: str | None = None) -> dict[str, Any]:
+def _run_bridge(manifest_payload: dict[str, Any], sample: bool = False, project_path: str | None = None, osv_api_url: str | None = None) -> dict[str, Any]:
 
 
     tools = _collect_mcp_tools(manifest_payload)
@@ -162,7 +162,7 @@ def _run_bridge(manifest_payload: dict[str, Any], sample: bool = False, project_
     osv_findings: list[dict[str, Any]] = []
     if project_path:
         try:
-            for threat in scan_with_osv_lookup(project_path):
+            for threat in scan_with_osv_lookup(project_path, osv_api_url=osv_api_url):
                 osv_findings.append(
                     {
                         "package": threat.package_name,
@@ -234,6 +234,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run SkillSpector bridge diagnostics")
     parser.add_argument("--manifest", type=str, default="", help="Path to SkillSpector-like JSON manifest")
     parser.add_argument("--project", type=str, default="", help="Project path for OSV lookup")
+    parser.add_argument("--osv-api-url", type=str, default=None, help="Custom OSV API base URL (overrides OSV_API_URL env)")
     parser.add_argument("--sample", action="store_true", help="Use deterministic demo manifest")
     parser.add_argument("--json", action="store_true", help="Print JSON report")
     parser.add_argument("--compact", action="store_true", help="Compact output for scripts")
@@ -253,7 +254,7 @@ def main() -> int:
             raise SystemExit("请提供 --manifest 或 --sample")
 
     project = args.project.strip() or None
-    report = _run_bridge(payload, sample=args.sample, project_path=project)
+    report = _run_bridge(payload, sample=args.sample, project_path=project, osv_api_url=args.osv_api_url)
 
     if args.json:
         print(json.dumps(report, ensure_ascii=False, indent=2 if not args.compact else None))
