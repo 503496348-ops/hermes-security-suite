@@ -15,6 +15,7 @@ Usage:
 """
 
 import json
+import os
 import subprocess
 from typing import Dict, List, Optional, Any, Tuple, Union
 from dataclasses import dataclass
@@ -38,11 +39,12 @@ class OSVClient:
     在线时查询实时数据，离线时优雅降级。
     """
 
-    API_URL = "https://api.osv.dev/v1"
+    DEFAULT_API_URL = "https://api.osv.dev/v1"
     TIMEOUT = 8  # seconds
 
-    def __init__(self, offline: bool = False):
+    def __init__(self, offline: bool = False, api_url: Optional[str] = None):
         self.offline = offline
+        self.api_url = api_url or os.environ.get("OSV_API_URL", self.DEFAULT_API_URL)
         self._cache: Dict[str, List[Vulnerability]] = {}
 
     def _curl(self, endpoint: str, data: Optional[str] = None) -> Optional[Dict]:
@@ -50,7 +52,7 @@ class OSVClient:
         if self.offline:
             return None
 
-        url = f"{self.API_URL}/{endpoint}"
+        url = f"{self.api_url}/{endpoint}"
         cmd = ["curl", "-s", "--max-time", str(self.TIMEOUT)]
 
         if data:
