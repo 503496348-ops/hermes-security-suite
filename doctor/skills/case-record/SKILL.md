@@ -16,7 +16,7 @@ Use when the user says `记录病历`, `记一下`, `save case`, or after a repa
 Run:
 
 ```bash
-python3 scripts/hermes_doctor.py record --title "short title" --status fixed --summary "what happened"
+python3 ../../scripts/hermes_doctor.py record --title "short title" --status fixed --summary "what happened"
 ```
 
 Valid status values:

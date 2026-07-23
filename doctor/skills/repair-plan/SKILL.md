@@ -16,13 +16,13 @@ Use when the user says `帮我修一下`, `自愈`, `怎么修`, or needs a safe
 Run:
 
 ```bash
-python3 scripts/hermes_doctor.py plan --text "symptom or error"
+python3 ../../scripts/hermes_doctor.py plan --text "symptom or error"
 ```
 
 Or with an explicit prescription:
 
 ```bash
-python3 scripts/hermes_doctor.py plan --rx-id RX-RUNTIME-001
+python3 ../../scripts/hermes_doctor.py plan --rx-id RX-RUNTIME-001
 ```
 
 Do not execute writes, installs, auth changes, restarts, deletes, or config edits from this skill. Generate the plan and wait for confirmation.

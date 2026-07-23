@@ -16,7 +16,7 @@ Use when integrating Hermes Doctor with Feishu/Lark messages.
 Run:
 
 ```bash
-python3 scripts/hermes_doctor.py route --text "Hermes Doctor 报错了：fetch failed" --format json
+python3 ../../scripts/hermes_doctor.py route --text "Hermes Doctor 报错了：fetch failed" --format json
 ```
 
 The router maps:
