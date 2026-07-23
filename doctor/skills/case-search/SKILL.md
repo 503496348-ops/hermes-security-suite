@@ -16,7 +16,7 @@ Use when the user asks `上次怎么处理`, `查病历`, `历史记录`, or rep
 Run:
 
 ```bash
-python3 scripts/hermes_doctor.py search --query "keyword"
+python3 ../../scripts/hermes_doctor.py search --query "keyword"
 ```
 
 Return matching case filenames and short summaries. If no case exists, suggest running health check or prescription match first.

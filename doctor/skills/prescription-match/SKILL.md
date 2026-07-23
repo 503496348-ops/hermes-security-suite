@@ -16,7 +16,7 @@ Use when the user says `报错了`, `出错了`, pastes logs, or asks what an er
 Run:
 
 ```bash
-python3 scripts/hermes_doctor.py match --text "paste error text here"
+python3 ../../scripts/hermes_doctor.py match --text "paste error text here"
 ```
 
 Return the top prescription in plain Chinese. If no match is found, ask for the most relevant 20 log lines and suggest a read-only health check.
