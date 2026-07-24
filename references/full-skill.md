@@ -155,8 +155,39 @@ Framework: OWASP LLMT09 (Misinformation), ASI-SR-003 (Least Knowledge)
 - 新增 `scripts/product_convergence_gate.py`：从远端干净 clone 后可运行 `python3 scripts/product_convergence_gate.py --json`，检查 SKILL/README、入口文件、smoke 目标、测试与外部融合引用是否自洽。
 - 新增 `tests/test_product_convergence_gate.py`：确保门禁在产品仓库中真实可执行，避免后续增强只停留在孤岛模块。
 
+## 一键开箱交付
+
+本仓库提供标准一键入口：
+
+- `install.sh`：用户的一条命令安装与冒烟入口。
+- `scripts/setup.py`：安装声明依赖并串联 doctor。
+- `scripts/doctor.py`：检查 README、SKILL、入口脚本、package scripts 与产品收敛门禁。
+- `scripts/smoke.py`：运行 doctor、产品收敛门禁与 Python 编译级冒烟。
+- `tests/test_one_click_open_box.py`：契约测试，防止 README 写了但脚本缺失。
 
 
-## 详细文档
+## Lark Coding Agent Bridge 融合增强
 
-完整内容见 `references/full-skill.md`。
+- 奇点造物新增 Bridge Security Invariants：prompt secret redaction、workspace allowlist、callback nonce 安全门禁。
+- 新增模块：`core/agent_handoff_security_invariants.py`
+- 来源模式：飞书/Lark 消息入口、本地 Claude/Codex 执行、会话 fingerprint、profile 隔离与安全门禁。
+
+## NVIDIA SkillSpector Bridge
+
+- 新增 `scripts/skillspector_bridge.py`：接受 SkillSpector 风格清单，输出统一 MCP 安全扫描结果。
+- 对每个 manifest 执行：
+  - MCP manifest 扫描（TP1~TP4）
+  - 最小权限与权限边界交叉核验
+  - 依赖项目在 `scan_with_osv_lookup` 下的 OSV 风险聚合
+- 与原生 `doctor` 集成：一键运行 `python3 scripts/skillspector_bridge.py --sample --json`，用于冒烟与接口兼容校验。
+
+### API 入口示例
+
+```bash
+python3 scripts/hermes_security_suite_api.py  # includes /diag endpoint
+```
+
+
+## Generic orchestration security invariants
+
+Adds controls for high-risk action confirmation, operator-only model changes, webhook URL allowlists, HTTPS enforcement, and wildcard CORS rejection.
